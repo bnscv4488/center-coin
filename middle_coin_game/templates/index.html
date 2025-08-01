@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Coin Game</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #e0e0e0;
+            font-family: Arial, sans-serif;
+        }
+        h1, h2 {
+            color: #00e676;
+        }
+        input, button, select {
+            padding: 8px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+        }
+        input[type="text"], input[type="number"] {
+            width: 200px;
+        }
+        button {
+            background-color: #00c853;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #00e676;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #444;
+            text-align: center;
+        }
+        th {
+            background-color: #263238;
+        }
+        td {
+            background-color: #37474f;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 30px auto;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Center Coin Game</h1>
+
+<form method="POST">
+    {% if not players %}
+        <label>Player Names (comma-separated):</label><br>
+        <input type="text" name="player_names" required><br>
+        <label>Entry Amount:</label><br>
+        <input type="number" name="entry_amount" value="5" required><br>
+        <button type="submit" name="action" value="start">Start Game</button>
+    {% else %}
+        <h2>Round {{ round_number }}</h2>
+        <p><strong>Pool:</strong> {{ pool }}</p>
+        <table>
+            <tr>
+                <th>Player</th>
+                <th>Win</th>
+                <th>Loss</th>
+                <th>Total Earnings</th>
+                <th>Total Entry Spent</th>
+            </tr>
+            {% for name, stats in players.items() %}
+            <tr>
+                <td>{{ name }}</td>
+                <td><input type="number" name="win_{{ name }}"></td>
+                <td><input type="number" name="loss_{{ name }}"></td>
+                <td>{{ stats.earnings }}</td>
+                <td>{{ stats.spent }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        <button type="submit" name="action" value="update">Update</button>
+        <button type="submit" name="action" value="end">End Game</button>
+        <button type="submit" name="action" value="download">Download History</button>
+    {% endif %}
+</form>
+
+{% if show_results %}
+    <h2>Final Results</h2>
+    <table>
+        <tr>
+            <th>Player</th>
+            <th>Total Spent</th>
+            <th>Total Earnings</th>
+            <th>Net</th>
+        </tr>
+        {% for name, result in final_results.items() %}
+        <tr>
+            <td>{{ name }}</td>
+            <td>{{ result.spent }}</td>
+            <td>{{ result.earnings }}</td>
+            <td style="color: {% if result.net >= 0 %}#00e676{% else %}#ff5252{% endif %};">
+                {{ result.net }}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    <div class="chart-container">
+        <canvas id="earningsChart"></canvas>
+    </div>
+
+    <script>
+        const chartLabels = {{ chart_data.keys()|list|tojson }};
+        const chartValues = {{ chart_data.values()|list|tojson }};
+
+        const datasets = chartLabels.map((name, index) => {
+            return {
+                label: name,
+                data: chartValues[index],
+                borderWidth: 1,
+                backgroundColor: `hsl(${index * 50}, 80%, 50%)`
+            };
+        });
+
+        const ctx = document.getElementById('earningsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [...Array(chartValues[0].length).keys()].map(i => 'Round ' + i),
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { labels: { color: '#fff' } },
+                    title: {
+                        display: true,
+                        text: 'Player Earnings Per Round',
+                        color: '#fff'
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: '#fff' } },
+                    y: { ticks: { color: '#fff' } }
+                }
+            }
+        });
+    </script>
+{% endif %}
+
+</body>
+</html>
