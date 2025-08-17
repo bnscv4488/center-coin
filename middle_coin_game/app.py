@@ -97,11 +97,11 @@ def index():
             final_results = {
                 name: {
                     'earnings': stats['earnings'],
-                    'spent': stats['spent'],
-                    'net': stats['earnings'] - stats['spent']
+                    'spent': stats['spent'] - entry_amount,  # Subtract 1 round entry
+                    'net': stats['earnings'] - (stats['spent'] - entry_amount)
                 } for name, stats in players.items()
             }
-            net_earnings = sum(stats['earnings'] for stats in players.values())
+            net_earnings = sum(result['earnings'] for result in final_results.values())
             show_results = True
 
             rendered = render_template('index.html', players=players, entry_amount=entry_amount,
